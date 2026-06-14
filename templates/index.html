@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block title %}NSDCP — Nigerian Student Digital Community{% endblock %}
+{% block content %}
+<div class="landing-pg">
+<div class="hero">
+  <div class="hero-badge">&#127475;&#127468; For Nigerian Students Only</div>
+  <h1>Your Student Voice,<br>Amplified & Protected</h1>
+  <p>A secure, moderated civic platform connecting Nigerian students for learning, governance, and community.</p>
+  <div class="hero-btns">
+    <a href="{{ url_for('auth.register') }}" class="btn btn-gold btn-lg">Join Now — Free</a>
+    <a href="{{ url_for('auth.login') }}" class="btn btn-outline btn-lg" style="color:#fff;border-color:rgba(255,255,255,.5)">Sign In</a>
+  </div>
+  <div class="hero-stats">
+    <div><strong>50K+</strong><span>Students</span></div>
+    <div><strong>300+</strong><span>Schools</span></div>
+    <div><strong>36</strong><span>States</span></div>
+  </div>
+</div>
+<div class="features">
+  <h2>Built for Safety. Built for Students.</h2>
+  <div class="features-grid">
+    <div class="feat-card"><div class="feat-ico">&#128274;</div><h3>Moderated Content</h3><p>No post goes live without admin approval. Every piece of public content is reviewed for quality and safety.</p></div>
+    <div class="feat-card"><div class="feat-ico">&#127884;</div><h3>Privacy by Design</h3><p>Your full name, address, and NIN are never publicly visible. Only first name + school shown in public.</p></div>
+    <div class="feat-card"><div class="feat-ico">&#127963;</div><h3>Governance System</h3><p>Structured roles: President, Vice, Reps. Students are represented by verified leaders at their institution.</p></div>
+    <div class="feat-card"><div class="feat-ico">&#128104;&#8205;&#128105;&#8205;&#128102;</div><h3>Safe Groups</h3><p>Groups require admin trust verification. Members join by invitation only — no open or uncontrolled access.</p></div>
+    <div class="feat-card"><div class="feat-ico">&#128202;</div><h3>Fair Voting</h3><p>1 vote per person. Up to 3 changes allowed before your vote locks. Admin-controlled poll expiry.</p></div>
+    <div class="feat-card"><div class="feat-ico">&#128680;</div><h3>Report System</h3><p>Report abuse, spam, or fake accounts. All reports go directly to admin with full evidence trail.</p></div>
+  </div>
+</div>
+</div>
+{% endblock %}

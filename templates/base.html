@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="{{ 'dark' if current_user.is_authenticated and current_user.dark_mode else 'light' }}">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}NSDCP{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  {% block head %}{% endblock %}
+</head>
+<body>
+{% if current_user.is_authenticated %}
+<nav class="topnav">
+  <div class="nav-left">
+    <a href="{{ url_for('main.dashboard') }}" class="logo">
+      <span class="logo-icon">&#127891;</span>
+      <div><span class="logo-text">NSDCP</span><span class="logo-sub">NIGERIAN STUDENT PLATFORM</span></div>
+    </a>
+    <form action="{{ url_for('main.search') }}" method="GET" class="nav-search">
+      <i class="fas fa-search"></i>
+      <input type="text" name="q" placeholder="Search students, schools..." value="{{ request.args.get('q','') }}">
+    </form>
+  </div>
+  <div class="nav-center">
+    <a href="{{ url_for('main.dashboard') }}" class="nav-icon {% if request.endpoint=='main.dashboard' %}active{% endif %}" title="Home"><i class="fas fa-home"></i></a>
+    <a href="{{ url_for('friends.list_friends') }}" class="nav-icon" title="Connections"><i class="fas fa-user-friends"></i></a>
+    <a href="{{ url_for('groups.index') }}" class="nav-icon" title="Groups"><i class="fas fa-users"></i></a>
+    <a href="{{ url_for('polls.index') }}" class="nav-icon" title="Polls"><i class="fas fa-poll-h"></i></a>
+    <a href="{{ url_for('chat.inbox') }}" class="nav-icon" title="Messages">
+      <i class="fas fa-comment-dots"></i>
+      {% set um = current_user.unread_messages_count() %}{% if um %}<span class="badge">{{ um }}</span>{% endif %}
+    </a>
+  </div>
+  <div class="nav-right">
+    <div class="nav-dropdown">
+      <button class="nav-icon" id="notif-btn"><i class="fas fa-bell"></i>
+        {% set nc = current_user.unread_notifications_count() %}{% if nc %}<span class="badge">{{ nc }}</span>{% endif %}
+      </button>
+      <div class="dropdown-panel" id="notif-panel">
+        <div class="panel-hdr"><span>Notifications</span><a href="{{ url_for('main.read_all_notifications') }}">Mark all read</a></div>
+        {% set notifs = current_user.notifications.order_by('created_at desc').limit(10).all() %}
+        {% if notifs %}{% for n in notifs %}
+        <a href="{{ url_for('main.read_notification', nid=n.id) }}" class="notif-item {% if not n.is_read %}unread{% endif %}">
+          <div class="notif-ico">
+            {% if 'friend' in n.type %}<i class="fas fa-user-plus"></i>
+            {% elif 'message' in n.type %}<i class="fas fa-comment"></i>
+            {% elif 'poll' in n.type %}<i class="fas fa-poll-h"></i>
+            {% elif 'approved' in n.type %}<i class="fas fa-check-circle"></i>
+            {% elif 'rejected' in n.type %}<i class="fas fa-times-circle"></i>
+            {% elif 'group' in n.type %}<i class="fas fa-users"></i>
+            {% else %}<i class="fas fa-bell"></i>{% endif %}
+          </div>
+          <div class="notif-body"><p>{{ n.message }}</p><span>{{ n.created_at.strftime('%d %b, %H:%M') }}</span></div>
+        </a>
+        {% endfor %}{% else %}<p class="empty-notif">No notifications yet</p>{% endif %}
+      </div>
+    </div>
+    <div class="nav-dropdown">
+      <button class="nav-icon" id="menu-btn">
+        <img src="{{ url_for('static', filename='uploads/' + current_user.profile_pic) }}"
+             onerror="this.src='https://ui-avatars.com/api/?name={{ current_user.full_name|urlencode }}&background=1a6b3c&color=fff'"
+             class="nav-avatar-img" alt="">
+      </button>
+      <div class="dropdown-panel" id="menu-panel">
+        <a href="{{ url_for('auth.profile', user_id=current_user.id) }}" class="menu-profile">
+          <img src="{{ url_for('static', filename='uploads/' + current_user.profile_pic) }}"
+               onerror="this.src='https://ui-avatars.com/api/?name={{ current_user.full_name|urlencode }}&background=1a6b3c&color=fff'" alt="">
+          <div><strong>{{ current_user.full_name }}</strong><span class="role-tag">{{ current_user.display_with_role }}</span></div>
+        </a>
+        <hr>
+        {% if current_user.role == 'admin' %}<a href="{{ url_for('admin.dashboard') }}" class="menu-item"><i class="fas fa-shield-alt"></i> Admin Panel</a>{% endif %}
+        <a href="{{ url_for('auth.edit_profile') }}" class="menu-item"><i class="fas fa-user-edit"></i> Edit Profile</a>
+        <form action="{{ url_for('auth.toggle_theme') }}" method="POST">
+          <button type="submit" class="menu-item"><i class="fas fa-{{ 'sun' if current_user.dark_mode else 'moon' }}"></i> {{ 'Light Mode' if current_user.dark_mode else 'Dark Mode' }}</button>
+        </form>
+        <hr>
+        <a href="{{ url_for('auth.logout') }}" class="menu-item danger"><i class="fas fa-sign-out-alt"></i> Sign Out</a>
+      </div>
+    </div>
+  </div>
+</nav>
+{% endif %}
+<div class="flash-wrap">
+{% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}
+  {% for cat, msg in messages %}
+  <div class="flash flash-{{ cat }}"><span>{{ msg }}</span><button onclick="this.parentElement.remove()">x</button></div>
+  {% endfor %}{% endif %}{% endwith %}
+</div>
+<div class="{% if current_user.is_authenticated %}main-app{% endif %}">{% block content %}{% endblock %}</div>
+{% if not current_user.is_authenticated %}<footer class="auth-footer-lg">2025 NSDCP</footer>{% endif %}
+<script>
+document.querySelectorAll('[id$="-btn"]').forEach(btn=>{btn.addEventListener('click',e=>{e.stopPropagation();const pid=btn.id.replace('-btn','-panel'),panel=document.getElementById(pid);document.querySelectorAll('.dropdown-panel').forEach(p=>{if(p!==panel)p.classList.remove('open');});panel&&panel.classList.toggle('open');});});
+document.addEventListener('click',()=>document.querySelectorAll('.dropdown-panel').forEach(p=>p.classList.remove('open')));
+setTimeout(()=>document.querySelectorAll('.flash').forEach(f=>f.style.opacity='0'),4500);
+</script>
+{% block scripts %}{% endblock %}
+</body></html>

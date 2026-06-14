@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block title %}Connections — NSDCP{% endblock %}
+{% block content %}
+<div class="content-wrap">
+  <div class="pg-hdr-row"><h2><i class="fas fa-user-friends"></i> My Connections ({{ friends|length }})</h2></div>
+  {% if friends %}
+  <div class="friends-grid">{% for f in friends %}
+  <div class="friend-card">
+    <a href="{{ url_for('auth.profile', user_id=f.id) }}">
+      <img src="{{ url_for('static', filename='uploads/' + f.profile_pic) }}"
+           onerror="this.src='https://ui-avatars.com/api/?name={{ f.full_name|urlencode }}&background=1a6b3c&color=fff'" alt="">
+      <strong>{{ f.display_name }}</strong>
+      <span class="role-chip role-{{ f.role }}">{{ f.role.replace('_',' ').title() }}</span>
+    </a>
+    <div class="friend-card-btns">
+      <a href="{{ url_for('chat.conversation', user_id=f.id) }}" class="btn btn-primary btn-xs"><i class="fas fa-comment"></i></a>
+      <form action="{{ url_for('friends.remove', user_id=f.id) }}" method="POST" style="display:inline"><button class="btn btn-ghost btn-xs"><i class="fas fa-user-minus"></i></button></form>
+    </div>
+  </div>
+  {% endfor %}</div>
+  {% else %}
+  <div class="empty-state"><div class="empty-ico">&#128101;</div><h3>No connections yet</h3><a href="{{ url_for('main.dashboard') }}" class="btn btn-primary">Discover Students</a></div>
+  {% endif %}
+</div>{% endblock %}

@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block title %}Sign In — NSDCP{% endblock %}
+{% block content %}
+<div class="auth-pg">
+  <div class="auth-brand">
+    <div class="logo-icon-xl">&#127891;</div>
+    <h1>NSDCP</h1><p>Nigerian Student Digital Community</p>
+  </div>
+  <div class="auth-box">
+    <h2>Welcome back</h2>
+    <p class="auth-sub">Sign in to your student account</p>
+    <form method="POST" class="auth-form">
+      <div class="form-group"><label>Email Address</label>
+        <div class="input-ico"><i class="fas fa-envelope"></i><input type="email" name="email" required placeholder="your@email.com"></div></div>
+      <div class="form-group"><label>Password</label>
+        <div class="input-ico"><i class="fas fa-lock"></i><input type="password" name="password" id="pw" required placeholder="Your password">
+        <button type="button" class="toggle-pw" onclick="var i=document.getElementById('pw');i.type=i.type=='password'?'text':'password'"><i class="fas fa-eye"></i></button></div></div>
+      <label class="check-label"><input type="checkbox" name="remember"> Keep me signed in</label>
+      <button type="submit" class="btn btn-primary btn-full">Sign In</button>
+    </form>
+    <div class="auth-divider"><span>New to NSDCP?</span></div>
+    <a href="{{ url_for('auth.register') }}" class="btn btn-outline btn-full">Create Account</a>
+  </div>
+</div>{% endblock %}
