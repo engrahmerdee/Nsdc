@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% block title %}Manage Groups — NSDCP Admin{% endblock %}
+{% block content %}
+<div class="admin-wrap"><aside class="admin-side">
+  <div class="admin-brand"><i class="fas fa-shield-alt"></i> NSDCP Admin</div>
+  <nav class="admin-nav">
+    <a href="/admin/" class="{% if 'dashboard' in request.endpoint %}active{% endif %}"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+    <a href="/admin/posts/review" class="{% if 'posts' in request.endpoint %}active{% endif %}"><i class="fas fa-newspaper"></i> Post Review{% if stats is defined and stats.pending %} <span class="badge" style="position:static;background:var(--gold);margin-left:auto">{{ stats.pending }}</span>{% endif %}</a>
+    <a href="/admin/users" class="{% if 'users' in request.endpoint %}active{% endif %}"><i class="fas fa-users"></i> Users</a>
+    <a href="/admin/groups" class="{% if 'groups' in request.endpoint %}active{% endif %}"><i class="fas fa-users-cog"></i> Groups</a>
+    <a href="/admin/reports" class="{% if 'reports' in request.endpoint %}active{% endif %}"><i class="fas fa-flag"></i> Reports</a>
+    <a href="/admin/broadcast"><i class="fas fa-bullhorn"></i> Broadcast</a>
+    <a href="/admin/logs"><i class="fas fa-list-alt"></i> Activity Log</a>
+    <hr>
+    <a href="/polls/create"><i class="fas fa-poll-h"></i> New Poll</a>
+    <a href="/"><i class="fas fa-home"></i> Back to App</a>
+  </nav>
+</aside>
+  <div class="admin-body">
+    <div class="admin-pg-hdr"><h1>Group Management</h1></div>
+    <form method="GET" class="filter-row">
+      <select name="trust"><option value="">All trust levels</option>{% for t in group_trust %}<option value="{{ t }}" {% if sel_trust==t %}selected{% endif %}>{{ t.title() }}</option>{% endfor %}</select>
+      <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+    </form>
+    <div class="a-card">
+      <table class="a-table">
+        <thead><tr><th>Group Name</th><th>Creator</th><th>Members</th><th>Trust</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody>{% for g in groups %}
+        <tr>
+          <td><strong>{{ g.name }}</strong><br><small style="color:var(--text-sec)">{{ g.school_tag or 'All schools' }}</small></td>
+          <td style="font-size:13px">{{ g.creator.display_name }}</td>
+          <td>{{ g.member_count() }}</td>
+          <td><span class="trust-badge trust-{{ g.trust_level }}">{{ g.trust_level.title() }}</span></td>
+          <td><span class="status-chip {% if g.is_frozen %}s-rejected{% else %}s-approved{% endif %}">{{ 'Frozen' if g.is_frozen else 'Active' }}</span></td>
+          <td>
+            <div style="display:flex;gap:4px;flex-wrap:wrap">
+              <select onchange="setGroupTrust({{ g.id }},this.value)" style="font-size:12px;padding:3px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)">
+                {% for t in group_trust %}<option value="{{ t }}" {% if g.trust_level==t %}selected{% endif %}>{{ t.title() }}</option>{% endfor %}
+              </select>
+              <form action="/admin/groups/{{ g.id }}/freeze" method="POST" style="display:inline"><button class="btn {% if g.is_frozen %}btn-success{% else %}btn-warn{% endif %} btn-xs">{{ 'Unfreeze' if g.is_frozen else 'Freeze' }}</button></form>
+              <form action="/admin/groups/{{ g.id }}/delete" method="POST" style="display:inline" onsubmit="return confirm('Delete group?')"><button class="btn btn-danger btn-xs"><i class="fas fa-trash"></i></button></form>
+            </div>
+          </td>
+        </tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<form id="trust-form" method="POST" style="display:none"><input type="hidden" name="trust_level" id="trust-val"></form>
+<script>function setGroupTrust(id,val){var f=document.getElementById('trust-form');f.action='/admin/groups/'+id+'/set-trust';document.getElementById('trust-val').value=val;f.submit();}</script>
+{% endblock %}

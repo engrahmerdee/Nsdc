@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% block title %}Post Review — NSDCP Admin{% endblock %}
+{% block content %}
+<div class="admin-wrap"><aside class="admin-side">
+  <div class="admin-brand"><i class="fas fa-shield-alt"></i> NSDCP Admin</div>
+  <nav class="admin-nav">
+    <a href="/admin/" class="{% if 'dashboard' in request.endpoint %}active{% endif %}"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+    <a href="/admin/posts/review" class="{% if 'posts' in request.endpoint %}active{% endif %}"><i class="fas fa-newspaper"></i> Post Review{% if stats is defined and stats.pending %} <span class="badge" style="position:static;background:var(--gold);margin-left:auto">{{ stats.pending }}</span>{% endif %}</a>
+    <a href="/admin/users" class="{% if 'users' in request.endpoint %}active{% endif %}"><i class="fas fa-users"></i> Users</a>
+    <a href="/admin/groups" class="{% if 'groups' in request.endpoint %}active{% endif %}"><i class="fas fa-users-cog"></i> Groups</a>
+    <a href="/admin/reports" class="{% if 'reports' in request.endpoint %}active{% endif %}"><i class="fas fa-flag"></i> Reports</a>
+    <a href="/admin/broadcast"><i class="fas fa-bullhorn"></i> Broadcast</a>
+    <a href="/admin/logs"><i class="fas fa-list-alt"></i> Activity Log</a>
+    <hr>
+    <a href="/polls/create"><i class="fas fa-poll-h"></i> New Poll</a>
+    <a href="/"><i class="fas fa-home"></i> Back to App</a>
+  </nav>
+</aside>
+  <div class="admin-body">
+    <div class="admin-pg-hdr"><h1>Post Moderation</h1></div>
+    <div style="display:flex;gap:8px;margin-bottom:16px">
+      <a href="/admin/posts/review?status=pending" class="btn {% if filter_status=='pending' %}btn-gold{% else %}btn-ghost{% endif %} btn-sm">Pending</a>
+      <a href="/admin/posts/review?status=approved" class="btn {% if filter_status=='approved' %}btn-primary{% else %}btn-ghost{% endif %} btn-sm">Approved</a>
+      <a href="/admin/posts/review?status=rejected" class="btn {% if filter_status=='rejected' %}btn-danger{% else %}btn-ghost{% endif %} btn-sm">Rejected</a>
+    </div>
+    {% if posts %}{% for p in posts %}
+    <div class="a-card" style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px">
+        <div style="flex:1">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">
+            <span class="status-chip s-{{ p.status }}">{{ p.status.title() }}</span>
+            {% if p.is_announcement %}<span class="status-chip s-approved">Announcement</span>{% endif %}
+            <small style="color:var(--text-sec)">{{ p.created_at.strftime('%d %b %Y, %H:%M') }}</small>
+          </div>
+          <strong>{{ p.title or 'Untitled Post' }}</strong>
+          <p style="font-size:14px;color:var(--text-sec);margin:4px 0">{{ p.content[:200] }}{% if p.content|length > 200 %}...{% endif %}</p>
+          <small>By: <strong>{{ p.author.display_with_role }}</strong> &middot; {{ p.author.school_name }}</small>
+          {% if p.reject_reason %}<p style="color:var(--danger);font-size:13px;margin-top:4px">Reject reason: {{ p.reject_reason }}</p>{% endif %}
+        </div>
+        {% if p.image %}<img src="/static/uploads/{{ p.image }}" style="width:80px;height:60px;object-fit:cover;border-radius:8px;flex-shrink:0" alt="">{% endif %}
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+        {% if p.status == 'pending' %}
+        <form action="/admin/posts/{{ p.id }}/approve" method="POST" style="display:inline"><button class="btn btn-success btn-sm"><i class="fas fa-check"></i> Approve</button></form>
+        <button class="btn btn-danger btn-sm" onclick="showReject({{ p.id }})"><i class="fas fa-times"></i> Reject</button>
+        {% endif %}
+        <form action="/admin/posts/{{ p.id }}/toggle-comments" method="POST" style="display:inline"><button class="btn btn-outline btn-sm"><i class="fas fa-comment{{ '-slash' if p.comments_enabled else '' }}"></i> {{ 'Disable' if p.comments_enabled else 'Enable' }} Comments</button></form>
+        <form action="/admin/posts/{{ p.id }}/delete" method="POST" style="display:inline" onsubmit="return confirm('Delete?')"><button class="btn btn-ghost btn-sm"><i class="fas fa-trash"></i> Delete</button></form>
+        <a href="/posts/{{ p.id }}" class="btn btn-ghost btn-sm"><i class="fas fa-eye"></i> View</a>
+      </div>
+    </div>
+    {% endfor %}{% else %}
+    <div class="empty-state"><p>No {{ filter_status }} posts.</p></div>
+    {% endif %}
+  </div>
+</div>
+<div class="modal-overlay" id="reject-modal">
+  <div class="modal-box">
+    <h3>Reject Post</h3>
+    <form method="POST" id="reject-form">
+      <div class="form-group"><label>Reason for rejection</label><textarea name="reason" rows="3" placeholder="Explain why this post is rejected..." required></textarea></div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" onclick="document.getElementById('reject-modal').classList.remove('open')">Cancel</button>
+        <button type="submit" class="btn btn-danger">Reject Post</button>
+      </div>
+    </form>
+  </div>
+</div>
+<script>function showReject(id){document.getElementById('reject-form').action='/admin/posts/'+id+'/reject';document.getElementById('reject-modal').classList.add('open');}</script>
+{% endblock %}
