@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block title %}Create Group — NSDCP{% endblock %}
+{% block content %}
+<div class="content-wrap narrow">
+  <div class="page-back"><a href="{{ url_for('groups.index') }}"><i class="fas fa-arrow-left"></i> Back</a></div>
+  <div class="form-card">
+    <h2><i class="fas fa-users" style="color:var(--green)"></i> Create a Group</h2>
+    <div class="verify-box" style="margin-bottom:16px"><i class="fas fa-info-circle"></i> New groups start as "Unverified" and have restricted visibility until admin reviews and verifies them. Membership is invitation-only.</div>
+    <form method="POST" enctype="multipart/form-data" class="form-styled">
+      <div class="form-group"><label>Group Name <span class="req">*</span></label><input type="text" name="name" required placeholder="e.g. FUTB Computer Science Students" maxlength="120"></div>
+      <div class="form-group"><label>Description</label><textarea name="description" rows="3" placeholder="What is this group about?"></textarea></div>
+      <div class="form-group"><label>School / Institution Tag</label><input type="text" name="school_tag" placeholder="{{ current_user.school_name or 'All schools' }}" value="{{ current_user.school_name or '' }}"></div>
+      <div class="form-group"><label>Group Avatar (optional)</label>
+        <div class="file-drop"><i class="fas fa-image"></i><span>Upload group photo</span>
+          <input type="file" name="avatar" accept="image/*" onchange="var r=new FileReader();r.onload=function(e){document.getElementById('av-prev').src=e.target.result;document.getElementById('av-prev').style.display='block'};r.readAsDataURL(this.files[0])">
+        </div>
+        <img id="av-prev" style="display:none;width:80px;height:80px;border-radius:50%;margin-top:8px;object-fit:cover" alt="">
+      </div>
+      <button type="submit" class="btn btn-primary btn-full">Create Group</button>
+    </form>
+  </div>
+</div>{% endblock %}
