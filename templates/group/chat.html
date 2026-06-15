@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+{% block title %}{{ group.name }} — NSDCP{% endblock %}
+{% block content %}
+<div class="chat-layout">
+  <div class="chat-sidebar">
+    <div class="chat-sidebar-hdr">
+      <span>{{ group.name }}</span>
+      <a href="{{ url_for('groups.index') }}" class="btn-icon"><i class="fas fa-arrow-left"></i></a>
+    </div>
+    <div style="padding:14px;border-bottom:1px solid var(--border)">
+      <img src="{{ url_for('static', filename='uploads/' + group.avatar) }}"
+           onerror="this.src='https://ui-avatars.com/api/?name={{ group.name|urlencode }}&background=1a6b3c&color=fff&size=60'"
+           style="width:60px;height:60px;border-radius:50%;object-fit:cover;margin:0 auto 8px;display:block" alt="">
+      <p style="font-size:13px;color:var(--text-sec);text-align:center">{{ group.description or '' }}</p>
+      <div style="text-align:center;margin-top:6px">
+        <span class="trust-badge trust-{{ group.trust_level }}">{{ group.trust_level.title() }}</span>
+        <span style="font-size:12px;color:var(--text-sec);display:block;margin-top:4px">{{ group.member_count() }} members</span>
+      </div>
+    </div>
+    <div style="padding:12px 14px;border-bottom:1px solid var(--border)">
+      <p class="sec-label">Members</p>
+      {% for user, role in member_data %}
+      <div style="display:flex;align-items:center;gap:8px;padding:5px 0">
+        <img src="{{ url_for('static', filename='uploads/' + user.profile_pic) }}"
+             onerror="this.src='https://ui-avatars.com/api/?name={{ user.full_name|urlencode }}&background=eee&color=555'"
+             style="width:28px;height:28px;border-radius:50%;object-fit:cover" alt="">
+        <span style="font-size:13px">{{ user.display_name }}</span>
+        <span class="role-chip" style="font-size:10px;background:var(--green-light);color:var(--green)">{{ role }}</span>
+      </div>
+      {% endfor %}
+    </div>
+    {% if can_manage(group, current_user) %}
+    <div style="padding:12px 14px">
+      <p class="sec-label">Invite Member</p>
+      <form action="{{ url_for('groups.invite', group_id=group.id) }}" method="POST" style="display:flex;gap:6px">
+        <input type="email" name="email" placeholder="Student email..." style="flex:1;font-size:13px;padding:6px 10px">
+        <button class="btn btn-primary btn-xs">Invite</button>
+      </form>
+    </div>
+    {% endif %}
+    <div style="padding:12px 14px;margin-top:auto">
+      <form action="{{ url_for('groups.leave', group_id=group.id) }}" method="POST" onsubmit="return confirm('Leave this group?')">
+        <button class="btn btn-ghost btn-sm btn-full"><i class="fas fa-sign-out-alt"></i> Leave Group</button></form>
+    </div>
+  </div>
+  <div class="chat-main">
+    {% if group.is_frozen %}
+    <div class="frozen-bar"><i class="fas fa-snowflake"></i> This group has been frozen by admin. No new messages allowed.</div>
+    {% endif %}
+    <div class="chat-hdr">
+      <div class="chat-hdr-left">
+        <img src="{{ url_for('static', filename='uploads/' + group.avatar) }}"
+             onerror="this.src='https://ui-avatars.com/api/?name={{ group.name|urlencode }}&background=1a6b3c&color=fff'"
+             class="chat-hdr-av" alt="">
+        <div><strong>{{ group.name }}</strong><small>{{ group.member_count() }} members &middot; {{ group.school_tag or 'All schools' }}</small></div>
+      </div>
+    </div>
+    <div class="chat-msgs" id="chat-msgs">
+      {% for msg in messages %}
+      <div class="msg-row {% if msg.sender_id == current_user.id %}msg-mine{% else %}msg-theirs{% endif %}">
+        {% if msg.sender_id != current_user.id %}
+        <img src="{{ url_for('static', filename='uploads/' + msg.sender.profile_pic) }}"
+             onerror="this.src='https://ui-avatars.com/api/?name={{ msg.sender.full_name|urlencode }}&background=1a6b3c&color=fff'"
+             class="msg-av" alt="">
+        {% endif %}
+        <div class="msg-bubble">
+          {% if msg.sender_id != current_user.id %}<small style="color:var(--green);font-weight:600;font-size:11px;display:block;margin-bottom:2px">{{ msg.sender.display_name }}</small>{% endif %}
+          <p>{{ msg.content }}</p>
+          <div class="msg-meta">
+            <span>{{ msg.created_at.strftime('%H:%M') }}</span>
+            {% if msg.sender_id != current_user.id %}
+            <button class="report-msg-btn" onclick="reportGMsg({{ msg.id }})"><i class="fas fa-flag"></i></button>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% if not group.is_frozen %}
+    <div class="chat-input-area">
+      <div class="emoji-tray">{% for e in ['😀','❤️','👍','🙏','🔥','😂','👏','🎉','💪','✅','🤝','📚'] %}<span onclick="addEmoji('{{ e }}')">{{ e }}</span>{% endfor %}</div>
+      <div class="msg-input-row">
+        <textarea id="msg-inp" rows="1" placeholder="Message the group..."
+          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendGMsg();}"
+          oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px'"></textarea>
+        <button class="btn btn-primary" onclick="sendGMsg()"><i class="fas fa-paper-plane"></i></button>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+<div class="modal-overlay" id="report-modal">
+  <div class="modal-box">
+    <h3><i class="fas fa-flag" style="color:var(--danger)"></i> Report Message</h3>
+    <form method="POST" id="report-form">
+      <div class="form-group" style="margin-bottom:10px"><select name="reason"><option value="abuse">Abuse</option><option value="spam">Spam</option><option value="inappropriate">Inappropriate</option></select></div>
+      <div class="modal-footer"><button type="button" class="btn btn-ghost" onclick="document.getElementById('report-modal').classList.remove('open')">Cancel</button><button type="submit" class="btn btn-danger">Report</button></div>
+    </form>
+  </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+<script>
+const socket=io(),room="{{ room }}",groupId={{ group.id }},myId={{ current_user.id }};
+socket.emit('group_join',{room});
+function scrollBottom(){const c=document.getElementById('chat-msgs');c.scrollTop=c.scrollHeight;}
+scrollBottom();
+function sendGMsg(){const inp=document.getElementById('msg-inp'),content=inp.value.trim();if(!content)return;socket.emit('group_send',{room,content,group_id:groupId});inp.value='';inp.style.height='auto';}
+socket.on('group_receive',d=>{
+  const msgs=document.getElementById('chat-msgs'),mine=d.sender_id===myId;
+  const div=document.createElement('div');div.className='msg-row '+(mine?'msg-mine':'msg-theirs');
+  div.innerHTML=(mine?'':'<img src="'+d.sender_pic+'" onerror="this.src='https://ui-avatars.com/api/?name='+encodeURIComponent(d.sender_name)+'&background=1a6b3c&color=fff'" class="msg-av" alt="">')
+    +'<div class="msg-bubble">'+(mine?'':'<small style="color:var(--green);font-weight:600;font-size:11px;display:block;margin-bottom:2px">'+esc(d.sender_name)+'</small>')+'<p>'+esc(d.content)+'</p><div class="msg-meta"><span>'+d.timestamp+'</span></div></div>';
+  msgs.appendChild(div);scrollBottom();
+});
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function addEmoji(e){const i=document.getElementById('msg-inp');i.value+=e;i.focus();}
+function reportGMsg(id){document.getElementById('report-form').action='/groups/{{ group.id }}/message/report/'+id;document.getElementById('report-modal').classList.add('open');}
+</script>{% endblock %}
