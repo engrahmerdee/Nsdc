@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+{% block title %}{{ post.title or 'Post' }} — NSDCP{% endblock %}
+{% block content %}
+<div class="content-wrap narrow">
+  <div class="page-back"><a href="{{ url_for('main.dashboard') }}"><i class="fas fa-arrow-left"></i> Back</a></div>
+  <div class="post-card" style="margin-bottom:16px">
+    {% if post.status == 'pending' %}<div class="mod-badge mod-pending"><i class="fas fa-clock"></i> Pending Review</div>{% endif %}
+    {% if post.status == 'rejected' %}<div class="mod-badge mod-rejected"><i class="fas fa-times"></i> Rejected: {{ post.reject_reason or 'See admin' }}</div>{% endif %}
+    {% if post.is_announcement %}<div class="post-tag ann"><i class="fas fa-bullhorn"></i> Official Announcement</div>{% endif %}
+    <div class="post-hdr">
+      <a href="{{ url_for('auth.profile', user_id=post.author.id) }}">
+        <img src="{{ url_for('static', filename='uploads/' + post.author.profile_pic) }}"
+             onerror="this.src='https://ui-avatars.com/api/?name={{ post.author.full_name|urlencode }}&background=1a6b3c&color=fff'"
+             class="post-av" alt="">
+      </a>
+      <div class="post-meta">
+        <a href="{{ url_for('auth.profile', user_id=post.author.id) }}" class="post-author">{{ post.author.display_with_role }}</a>
+        <span class="post-time">{{ post.created_at.strftime('%d %b %Y, %H:%M') }}</span>
+      </div>
+      {% if current_user.role == 'admin' or post.user_id == current_user.id %}
+      <form action="{{ url_for('posts.delete', post_id=post.id) }}" method="POST" style="margin-left:auto" onsubmit="return confirm('Delete this post?')">
+        <button class="btn btn-danger btn-xs"><i class="fas fa-trash"></i></button></form>
+      {% endif %}
+    </div>
+    {% if post.title %}<h2 class="post-title">{{ post.title }}</h2>{% endif %}
+    <div class="post-body">{{ post.content | nl2br | safe }}</div>
+    {% if post.image %}<img src="{{ url_for('static', filename='uploads/' + post.image) }}" class="post-img" alt="">{% endif %}
+    <div class="post-stats">{{ post.likes_count() }} likes &middot; {{ post.comments_count() }} comments</div>
+    {% if post.status == 'approved' %}
+    <div class="post-actions">
+      <button class="pa-btn {% if liked %}liked{% endif %}" onclick="doLike({{ post.id }},this)"><i class="fas fa-thumbs-up"></i> Like</button>
+      <button class="pa-btn" onclick="document.getElementById('report-modal').classList.add('open')"><i class="fas fa-flag"></i> Report</button>
+    </div>
+    {% endif %}
+  </div>
+  <div class="comments-section">
+    <h3>Comments {% if not post.comments_enabled %}<span style="font-size:13px;color:var(--text-sec);font-weight:400">(disabled)</span>{% endif %}</h3>
+    {% if post.comments_enabled and post.status == 'approved' and current_user.has_full_access %}
+    <form action="{{ url_for('posts.add_comment', post_id=post.id) }}" method="POST" class="comment-form">
+      <img src="{{ url_for('static', filename='uploads/' + current_user.profile_pic) }}"
+           onerror="this.src='https://ui-avatars.com/api/?name={{ current_user.full_name|urlencode }}&background=1a6b3c&color=fff'"
+           class="comment-av" alt="">
+      <div class="comment-input-wrap">
+        <textarea name="content" placeholder="Write as {{ current_user.display_name }}..." rows="2" required></textarea>
+        <button type="submit" class="btn btn-primary btn-sm">Post</button>
+      </div>
+    </form>
+    {% elif not current_user.has_full_access %}
+    <p class="disabled-note"><i class="fas fa-lock"></i> <a href="{{ url_for('auth.edit_profile') }}">Complete your profile</a> to comment.</p>
+    {% endif %}
+    {% for c in comments %}
+    <div class="comment-item">
+      <img src="{{ url_for('static', filename='uploads/' + c.author.profile_pic) }}"
+           onerror="this.src='https://ui-avatars.com/api/?name={{ c.author.full_name|urlencode }}&background=eee&color=555'"
+           class="comment-av" alt="">
+      <div class="c-body">
+        <span class="c-author">{{ c.author.display_name }}</span>
+        <p>{{ c.content }}</p>
+        <span class="c-time">{{ c.created_at.strftime('%d %b, %H:%M') }}</span>
+        {% if current_user.role == 'admin' or c.user_id == current_user.id %}
+        <form action="{{ url_for('posts.delete_comment', cid=c.id) }}" method="POST" style="display:inline">
+          <button class="btn-link text-danger" style="font-size:12px;margin-left:8px">Delete</button></form>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+<div class="modal-overlay" id="report-modal">
+  <div class="modal-box">
+    <h3><i class="fas fa-flag" style="color:var(--danger)"></i> Report Post</h3>
+    <form action="{{ url_for('posts.report_post', post_id=post.id) }}" method="POST">
+      <div class="form-group"><label>Reason</label>
+        <select name="reason"><option value="inappropriate">Inappropriate Content</option><option value="spam">Spam</option><option value="abuse">Abuse / Harassment</option><option value="fake">Misinformation</option></select></div>
+      <div class="form-group"><label>Details (optional)</label><textarea name="details" rows="3" placeholder="Describe the issue..."></textarea></div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" onclick="document.getElementById('report-modal').classList.remove('open')">Cancel</button>
+        <button type="submit" class="btn btn-danger">Submit Report</button>
+      </div>
+    </form>
+  </div>
+</div>
+<script>function doLike(id,btn){fetch('/posts/'+id+'/like',{method:'POST'}).then(r=>r.json()).then(d=>{btn.classList.toggle('liked',d.liked);});}</script>
+{% endblock %}

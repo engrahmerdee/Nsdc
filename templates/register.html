@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+{% block title %}Create Account — NSDCP{% endblock %}
+{% block content %}
+<div class="auth-pg">
+  <div class="auth-brand"><div class="logo-icon-xl">&#127891;</div><h1>NSDCP</h1><p>Nigerian Student Digital Community</p></div>
+  <div class="auth-box wide">
+    <h2>Create Your Account</h2>
+    <div class="steps-bar"><div class="step-dot on" id="s1d"><span>1</span> Basic Info</div><div class="step-line"></div><div class="step-dot" id="s2d"><span>2</span> Verification</div></div>
+    <form method="POST" enctype="multipart/form-data" class="auth-form" id="reg-form">
+      <!-- STEP 1 -->
+      <div id="s1">
+        <div class="form-row2">
+          <div class="form-group"><label>Full Name <span class="req">*</span></label><input type="text" name="full_name" required placeholder="Your full legal name" value="{{ form.get('full_name','') }}"></div>
+          <div class="form-group"><label>Email Address <span class="req">*</span></label><input type="email" name="email" required placeholder="your@email.com" value="{{ form.get('email','') }}"></div>
+        </div>
+        <div class="form-row2">
+          <div class="form-group"><label>Password <span class="req">*</span></label><input type="password" name="password" id="pw" required placeholder="Min. 8 characters"></div>
+          <div class="form-group"><label>Confirm Password <span class="req">*</span></label><input type="password" name="confirm_password" required placeholder="Re-enter password"></div>
+        </div>
+        <div class="form-row2">
+          <div class="form-group"><label>Phone Number</label><input type="tel" name="phone_number" placeholder="+234 800 000 0000" value="{{ form.get('phone_number','') }}"></div>
+          <div class="form-group"><label>Date of Birth</label><input type="date" name="date_of_birth" value="{{ form.get('date_of_birth','') }}"></div>
+        </div>
+        <div class="form-row2">
+          <div class="form-group"><label>State of Origin <span class="req">*</span></label>
+            <select name="state_of_origin" id="state-sel" required onchange="loadSchools(this.value)">
+              <option value="">Select state...</option>
+              {% for s in states %}<option value="{{ s }}" {% if form.get('state_of_origin')==s %}selected{% endif %}>{{ s }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="form-group"><label>Town / LGA <span class="req">*</span></label><input type="text" name="town_lga" required placeholder="Your LGA" value="{{ form.get('town_lga','') }}"></div>
+        </div>
+        <div class="form-group"><label>School / Institution <span class="req">*</span></label>
+          <select name="school_name" id="school-sel" required>
+            <option value="">First select your state above...</option>
+          </select>
+          <input type="text" name="school_name_custom" id="school-custom" placeholder="Or type your school name here" style="margin-top:8px">
+          <small style="color:var(--text-sec);font-size:12px">Select from list above OR type manually below</small>
+        </div>
+        <button type="button" class="btn btn-primary btn-full" onclick="goS2()">Continue &rarr;</button>
+      </div>
+      <!-- STEP 2 -->
+      <div id="s2" style="display:none">
+        <div class="verify-box" style="margin-bottom:16px"><i class="fas fa-shield-alt"></i> These fields are optional but help verify your identity. All sensitive data is encrypted and never displayed publicly.</div>
+        <div class="form-row2">
+          <div class="form-group"><label>NIN (National ID Number)</label><input type="text" name="nin" placeholder="11-digit NIN (optional)" maxlength="11"></div>
+          <div class="form-group"><label>School Registration Number</label><input type="text" name="school_reg" placeholder="Your reg number (optional)"></div>
+        </div>
+        <div class="form-row2">
+          <div class="form-group"><label>Faculty</label><input type="text" name="faculty" placeholder="e.g. Engineering"></div>
+          <div class="form-group"><label>Department</label><input type="text" name="department" placeholder="e.g. Computer Science"></div>
+        </div>
+        <div class="form-group"><label>Residential Address</label><textarea name="residential_address" rows="2" placeholder="Optional"></textarea></div>
+        <div class="form-row2">
+          <button type="button" class="btn btn-outline" onclick="goS1()">&larr; Back</button>
+          <button type="submit" class="btn btn-primary btn-full">Create Account</button>
+        </div>
+      </div>
+    </form>
+    <div class="auth-divider"><span>Already have an account?</span></div>
+    <a href="{{ url_for('auth.login') }}" class="btn btn-outline btn-full">Sign In</a>
+  </div>
+</div>
+<script>
+const SCHOOLS = {{ schools | tojson }};
+
+function loadSchools(state) {
+  const sel = document.getElementById('school-sel');
+  sel.innerHTML = '<option value="">Select school...</option>';
+  if (SCHOOLS[state]) {
+    SCHOOLS[state].forEach(s => {
+      const opt = document.createElement('option');
+      opt.value = s; opt.textContent = s;
+      sel.appendChild(opt);
+    });
+  }
+  // When custom selected, sync to real field
+  sel.onchange = () => {
+    const custom = document.getElementById('school-custom');
+    if (sel.value) custom.value = '';
+  };
+}
+
+// Before submit, merge school selection
+document.getElementById('reg-form').addEventListener('submit', function() {
+  const sel = document.getElementById('school-sel');
+  const custom = document.getElementById('school-custom');
+  if (custom.value.trim()) {
+    sel.innerHTML = '<option value="'+custom.value+'" selected>'+custom.value+'</option>';
+  }
+});
+
+function goS2() {
+  const required = ['full_name','email','password','confirm_password','state_of_origin','town_lga'];
+  let ok = true;
+  required.forEach(n => {
+    const el = document.querySelector('[name="'+n+'"]');
+    if (el && !el.value.trim()) { el.classList.add('err'); ok = false; }
+    else if (el) el.classList.remove('err');
+  });
+  // Check school
+  const sel = document.getElementById('school-sel');
+  const custom = document.getElementById('school-custom');
+  if (!sel.value && !custom.value.trim()) {
+    sel.classList.add('err'); custom.classList.add('err'); ok = false;
+  } else { sel.classList.remove('err'); custom.classList.remove('err'); }
+
+  if (!ok) { alert('Please fill all required fields.'); return; }
+  document.getElementById('s1').style.display = 'none';
+  document.getElementById('s2').style.display = 'block';
+  document.getElementById('s2d').classList.add('on');
+}
+function goS1() {
+  document.getElementById('s1').style.display = 'block';
+  document.getElementById('s2').style.display = 'none';
+  document.getElementById('s2d').classList.remove('on');
+}
+
+// Pre-load if state was selected before error
+const preState = document.getElementById('state-sel').value;
+if (preState) loadSchools(preState);
+</script>
+{% endblock %}

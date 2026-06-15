@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block title %}Polls — NSDCP{% endblock %}
+{% block content %}
+<div class="content-wrap">
+  <div class="pg-hdr-row">
+    <h2><i class="fas fa-poll-h"></i> Polls & Voting</h2>
+    {% if current_user.role == 'admin' %}<a href="{{ url_for('polls.create') }}" class="btn btn-primary"><i class="fas fa-plus"></i> Create Poll</a>{% endif %}
+  </div>
+  {% if polls %}{% for poll in polls %}
+  {% set uv = user_votes.get(poll.id) %}
+  {% set open = poll.is_active and poll.ends_at > now %}
+  <div class="poll-card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+      <span class="poll-status-{{ 'open' if open else 'closed' }}"><i class="fas fa-circle" style="font-size:8px"></i> {{ 'Open' if open else 'Closed' }}</span>
+      <span style="font-size:13px;color:var(--text-sec)">{{ poll.total_votes() }} votes</span>
+    </div>
+    <h3 style="font-size:16px;margin-bottom:6px"><a href="{{ url_for('polls.view', poll_id=poll.id) }}">{{ poll.question }}</a></h3>
+    <div class="poll-meta-row">
+      <span><i class="fas fa-clock"></i> {% if open %}Ends {{ poll.ends_at.strftime('%d %b %Y') }}{% else %}Ended{% endif %}</span>
+      {% if uv %}<span class="{% if uv.is_locked %}tl-chip tl-flagged{% else %}tl-chip tl-verified{% endif %}"><i class="fas fa-{{ 'lock' if uv.is_locked else 'check' }}"></i> {{ 'Locked' if uv.is_locked else 'Voted ('+uv.change_count|string+'/3)' }}</span>{% endif %}
+    </div>
+    <a href="{{ url_for('polls.view', poll_id=poll.id) }}" class="btn btn-outline btn-sm">{{ 'Change Vote' if uv and not uv.is_locked and open else 'View Poll' }}</a>
+  </div>
+  {% endfor %}{% else %}
+  <div class="empty-state"><div class="empty-ico">&#128202;</div><h3>No polls yet</h3>{% if current_user.role == 'admin' %}<a href="{{ url_for('polls.create') }}" class="btn btn-primary">Create First Poll</a>{% endif %}</div>
+  {% endif %}
+</div>{% endblock %}

@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+{% block title %}Edit Profile — NSDCP{% endblock %}
+{% block content %}
+<div class="content-wrap narrow">
+  <div class="page-back"><a href="{{ url_for('auth.profile', user_id=current_user.id) }}"><i class="fas fa-arrow-left"></i> Back</a></div>
+  <div class="form-card">
+    <h2><i class="fas fa-user-edit" style="color:var(--green)"></i> Edit Profile</h2>
+    <form method="POST" enctype="multipart/form-data" class="form-styled">
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:8px">
+        <img src="{{ url_for('static', filename='uploads/' + current_user.profile_pic) }}"
+             onerror="this.src='https://ui-avatars.com/api/?name={{ current_user.full_name|urlencode }}&background=1a6b3c&color=fff&size=80'"
+             style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid var(--green-light)" id="av-preview" alt="">
+        <label class="btn btn-outline btn-sm"><i class="fas fa-camera"></i> Change Photo
+          <input type="file" name="profile_pic" accept="image/*" style="display:none"
+            onchange="var r=new FileReader();r.onload=function(e){document.getElementById('av-preview').src=e.target.result};r.readAsDataURL(this.files[0])">
+        </label>
+      </div>
+      <div class="form-group"><label>Bio</label><textarea name="bio" rows="3" placeholder="Tell other students about yourself...">{{ current_user.bio or '' }}</textarea></div>
+      <div class="form-row2">
+        <div class="form-group"><label>Phone Number</label><input type="tel" name="phone_number" value="{{ current_user.phone_number or '' }}" placeholder="+234 800 000 0000"></div>
+        <div class="form-group"><label>Town / LGA</label><input type="text" name="town_lga" value="{{ current_user.town_lga or '' }}"></div>
+      </div>
+      <div class="form-row2">
+        <div class="form-group"><label>Faculty</label><input type="text" name="faculty" value="{{ current_user.faculty or '' }}"></div>
+        <div class="form-group"><label>Department</label><input type="text" name="department" value="{{ current_user.department or '' }}"></div>
+      </div>
+      <div class="form-group"><label>Residential Address</label><textarea name="residential_address" rows="2">{{ current_user.residential_address or '' }}</textarea></div>
+      <div style="border-top:1px solid var(--border);padding-top:14px">
+        <p style="font-size:13px;font-weight:700;color:var(--green);margin-bottom:10px"><i class="fas fa-lock"></i> Identity Verification (Encrypted)</p>
+        <div class="form-row2">
+          <div class="form-group"><label>NIN</label><input type="text" name="nin" placeholder="{{ '(saved)' if current_user.nin else 'Enter NIN (optional)' }}" maxlength="11"></div>
+          <div class="form-group"><label>School Reg. Number</label><input type="text" name="school_reg" placeholder="{{ '(saved)' if current_user.school_reg else 'Enter Reg No (optional)' }}"></div>
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary btn-full">Save Changes</button>
+    </form>
+  </div>
+
+  <!-- Scholarship Registration -->
+  <div class="form-card" style="margin-top:16px">
+    <h2><i class="fas fa-graduation-cap" style="color:var(--gold)"></i> Scholarship Registration</h2>
+    {% if scholarship %}
+    <div style="background:var(--green-light);border-radius:8px;padding:14px;margin-bottom:16px;font-size:14px">
+      <i class="fas fa-check-circle" style="color:var(--green)"></i>
+      <strong>Scholarship details registered!</strong> Status: <span class="status-chip s-{{ scholarship.status }}">{{ scholarship.status.title() }}</span>
+      <p style="margin-top:8px;color:var(--text-sec)">Bank: {{ scholarship.bank_name }} &middot; Account: {{ scholarship.account_name }}</p>
+    </div>
+    <div style="background:var(--gold-light);border-radius:8px;padding:14px;font-size:14px;color:var(--gold)">
+      <i class="fas fa-bell"></i> <strong>We will notify you automatically</strong> when a scholarship is available for you. Please wait patiently.
+    </div>
+    {% else %}
+    <p style="font-size:14px;color:var(--text-sec);margin-bottom:16px">Register your banking details to be considered for scholarship opportunities. Admin will review and notify you when a scholarship is available.</p>
+    <form action="{{ url_for('auth.submit_scholarship') }}" method="POST" class="form-styled">
+      <div class="form-group"><label>Bank Name <span class="req">*</span></label>
+        <select name="bank_name" required>
+          <option value="">Select your bank...</option>
+          {% for bank in banks %}<option value="{{ bank }}">{{ bank }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-row2">
+        <div class="form-group"><label>Account Number <span class="req">*</span></label><input type="text" name="account_number" required placeholder="10-digit account number" maxlength="10"></div>
+        <div class="form-group"><label>Account Name <span class="req">*</span></label><input type="text" name="account_name" required placeholder="Name on account"></div>
+      </div>
+      <div style="background:var(--danger-light);border-radius:8px;padding:12px;font-size:13px;color:var(--danger);margin-bottom:8px">
+        <i class="fas fa-exclamation-triangle"></i> Only admin can see your banking details. They are stored securely and only used for scholarship disbursement.
+      </div>
+      <button type="submit" class="btn btn-gold btn-full"><i class="fas fa-graduation-cap"></i> Register for Scholarship</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

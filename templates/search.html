@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block title %}Search — NSDCP{% endblock %}
+{% block content %}
+<div class="content-wrap narrow">
+  <h2 style="font-size:22px;font-weight:800;margin-bottom:16px"><i class="fas fa-search"></i> Search Students</h2>
+  <form action="{{ url_for('main.search') }}" method="GET" style="display:flex;gap:8px;margin-bottom:20px">
+    <input type="text" name="q" value="{{ query }}" placeholder="Search by name or school..." style="flex:1" autofocus>
+    <button type="submit" class="btn btn-primary">Search</button>
+  </form>
+  {% if results %}
+  <div>{% for u in results %}
+  <div class="search-res-item">
+    <a href="{{ url_for('auth.profile', user_id=u.id) }}" class="search-res-link">
+      <img src="{{ url_for('static', filename='uploads/' + u.profile_pic) }}"
+           onerror="this.src='https://ui-avatars.com/api/?name={{ u.full_name|urlencode }}&background=1a6b3c&color=fff'" alt="">
+      <div><strong>{{ u.display_name }}</strong><span class="role-chip role-{{ u.role }}" style="margin:0 4px">{{ u.role.replace('_',' ').title() }}</span><small>{{ u.school_name or '' }}</small></div>
+    </a>
+    {% if not current_user.is_friends_with(u) and u.id != current_user.id %}
+    <form action="{{ url_for('friends.send_request', user_id=u.id) }}" method="POST">
+      <button class="btn btn-outline btn-sm">+ Connect</button></form>
+    {% endif %}
+  </div>
+  {% endfor %}</div>
+  {% elif query %}
+  <div class="empty-state"><div class="empty-ico">&#128269;</div><h3>No results for "{{ query }}"</h3></div>
+  {% endif %}
+</div>{% endblock %}
